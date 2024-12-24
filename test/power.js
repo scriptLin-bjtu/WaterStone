@@ -12,6 +12,7 @@ async function initialize() {
 		process.exit(1);
 	}
 }
+//12324
 //解析卡牌内容
 function praseCardID(Cards,cardid){
 	let cardname;

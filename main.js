@@ -8,9 +8,11 @@ const {
 	findPlayerID,
 	findStartingHand,
 	praseCardID,
-	detectGameOver
+	detectGameOver,
+	findSwitchCards,
+	detectDrawCard
 } = require('./mymodule/gameTracer.js');
-const token = 'USFE3RF5m2gvmFdxRyCTFfWg6cm2N1vFaq';
+const token = 'EUqeoJoYJcETAEoVX2nhMEe3xeu3LTXQCH';
 let deckInfo = null;
 let filePath = '';
 let lastSize = 0;
@@ -78,10 +80,10 @@ function setupPowerLogFile(powerLogPath) {
 					end: curr.size,
 				});
 				stream.on('data', (chunk) => {
-					//console.log('**********************************************');
-					//console.log('Power.log updated:', chunk.toString());
-					//console.log('**********************************************');
-					gameControler(gameCode, chunk.toString());
+					console.log('**********************************************');
+					console.log('Power.log updated:', chunk.toString());
+					console.log('**********************************************');
+					//gameControler(gameCode, chunk.toString());
 				});
 				stream.on('end', () => {
 					lastSize = curr.size;
@@ -152,15 +154,24 @@ async function gameControler(code, content) {
 				const hands = findStartingHand(content);
 				if (hands) {
 					const cardNames = hands.map(cardid => praseCardID(cardsdata, cardid));
-					console.log('检测到初始手牌' + cardNames);
+					console.log('检测到初始手牌:' + cardNames);
 					gameCode = 2;
 				}
 				break;
 			case 2: //换牌阶段
-				console.log('检测到玩家换手牌');
+				const result=findSwitchCards(content,playerID,handCards,cardsdata);
+				if(result){
+					handCards=result;
+				}
+				console.log('检测到玩家替换后手牌:' + handCards);
 				gameCode = 3;
 				break;
 			case 3: //对战阶段
+				const drawcards=detectDrawCard(content,cardsdata)
+				if(drawcards){
+					console.log('检测到玩家回合开始抽牌:'+drawcards);
+					handCards.push(...drawcards);
+				}else
 				if (detectGameOver(content)) {
 					console.log('检测到游戏结束');
 					gameCode = 1;

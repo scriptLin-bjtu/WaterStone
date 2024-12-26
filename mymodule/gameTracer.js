@@ -80,6 +80,23 @@ function findSwitchCards(block, playerid, hands, cards) {
 		console.error(e);
 	}
 }
+//解析玩家抽牌
+function detectDrawCard(block,Cards){
+	let drawcard;
+	try{
+		const result=block.match(/TAG_CHANGE Entity=GameEntity tag=NUM_TURNS_IN_PLAY value=([\s\S]*?)TAG_CHANGE Entity=GameEntity tag=NEXT_STEP value=MAIN_END/);
+		if(result){
+			drawcard=[];
+			const cards=result[0].trim().matchAll(/SHOW_ENTITY - Updating Entity=\[.*?\] CardID=([^\s]+)/g);
+			for(const match of cards){
+				drawcard.push(praseCardID(Cards,match[1]));
+			}
+		}
+	return drawcard;	
+	}catch(e){
+		console.error(e);
+	}
+}
 //解析游戏结束
 function detectGameOver(block) {
 	try {
@@ -94,3 +111,4 @@ exports.findStartingHand = findStartingHand;
 exports.praseCardID = praseCardID;
 exports.findSwitchCards = findSwitchCards;
 exports.detectGameOver = detectGameOver;
+exports.detectDrawCard=detectDrawCard;

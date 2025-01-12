@@ -8,8 +8,5 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "@firestone-hs/deckstrings": "^2.2.8"
-  }
+  "license": "ISC"
 }

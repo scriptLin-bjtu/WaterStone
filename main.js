@@ -12,15 +12,15 @@ const {
 	findSwitchCards,
 	detectDrawCard
 } = require('./mymodule/gameTracer.js');
-const token = 'EUqeoJoYJcETAEoVX2nhMEe3xeu3LTXQCH';
+const token = 'EU0AAthRMPTDMbEA9nivDDa7aRb9Qbejn3';
 let deckInfo = null;
 let filePath = '';
 let lastSize = 0;
 let gameCode = 0;
 let cardsdata = null;
 let watcher = null;
-let handCards=[];
-let playerID=null;
+let handCards = [];
+let playerID = null;
 //监控日志目录
 async function monitorLogDir() {
 	try {
@@ -131,7 +131,12 @@ async function initialize() {
 	const url = "https://api.hearthstonejson.com/v1/latest/enUS/cards.json";
 	try {
 		// 获取卡牌数据
-		const response = await fetch(url);
+		const response = await fetch(url, {
+			method: "GET",
+			headers: {
+				'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'
+			}
+		});
 		cardsdata = await response.json();
 		console.log(`Cards data loaded: ${cardsdata.length} cards`);
 	} catch (error) {
@@ -142,12 +147,12 @@ async function initialize() {
 // 游戏控制器逻辑
 async function gameControler(code, content) {
 		switch (code) {
-			case 0://解析玩家id
-				const ID=findPlayerID(content);
-				if(ID){
-					playerID=ID;
-					console.log('检测到玩家ID:'+playerID);
-					gameCode=1;
+			case 0: //解析玩家id
+				const ID = findPlayerID(content);
+				if (ID) {
+					playerID = ID;
+					console.log('检测到玩家ID:' + playerID);
+					gameCode = 1;
 				}
 				break;
 			case 1: //初始抽牌阶段
@@ -159,19 +164,19 @@ async function gameControler(code, content) {
 				}
 				break;
 			case 2: //换牌阶段
-				const result=findSwitchCards(content,playerID,handCards,cardsdata);
-				if(result){
-					handCards=result;
+				const result = findSwitchCards(content, playerID, handCards, cardsdata);
+				if (result) {
+					handCards = result;
 				}
 				console.log('检测到玩家替换后手牌:' + handCards);
 				gameCode = 3;
 				break;
 			case 3: //对战阶段
-				const drawcards=detectDrawCard(content,cardsdata)
-				if(drawcards){
-					console.log('检测到玩家回合开始抽牌:'+drawcards);
+				const drawcards = detectDrawCard(content, cardsdata)
+				if (drawcards) {
+					console.log('检测到玩家回合开始抽牌:' + drawcards);
 					handCards.push(...drawcards);
-				}else
+				} else
 				if (detectGameOver(content)) {
 					console.log('检测到游戏结束');
 					gameCode = 1;

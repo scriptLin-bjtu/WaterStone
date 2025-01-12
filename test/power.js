@@ -23,133 +23,129 @@ function praseCardID(Cards,cardid){
 	});
 	return cardname;
 }
-//解析玩家换牌
-function findSwitchCards(block, playerid, hands, cards) {
+//解析玩家打出牌
+function detectPlayCard(block, Cards,playerid) {
 	try {
-		const reg1 = new RegExp(`TAG_CHANGE Entity=${playerid} tag=MULLIGAN_STATE value=DEALING`);
-		const reg2 = new RegExp(`TAG_CHANGE Entity=${playerid} tag=MULLIGAN_STATE value=WAITING`);
-		const reg3 = new RegExp(
-			`TAG_CHANGE Entity=${playerid} tag=MULLIGAN_STATE value=DEALING([\\s\\S]*?)TAG_CHANGE Entity=${playerid} tag=MULLIGAN_STATE value=WAITING`
-		);
-		if (block.match(reg1) && block.match(reg2)) {
-			const result = block.match(reg3)[1].trim();
-			const cards1 = result.match(/SHOW_ENTITY - Updating Entity=\[.*?\] CardID=([^\s]+)/g); //替换的卡牌数组
-			const cards2 = result.match(/HIDE_ENTITY - Entity=\[.*?cardId=([^\s]+).*?\] tag=ZONE value=DECK/g) //新换的卡牌数组
-			if (cards1 && cards2) {
-				const c1 = cards1.map(result => {
-					return praseCardID(cards, result.match(/CardID=([^\s]+)/)[1]);
-				});
-				const c2 = cards2.map(result => {
-					return praseCardID(cards, result.match(/cardId=([^\s]+)/)[1]);
-				});
-				//console.log(c1);
-				//console.log(c2);
-				const arr2Copy = [...c1];
-				const arr1Copy = [...c2];
-				return hands.map(item => {
-					const index = arr1Copy.indexOf(item);
-					if (index !== -1) {
-						const replacement = arr2Copy[index];
-						arr1Copy.splice(index, 1);
-						arr2Copy.splice(index, 1);
-						return replacement;
-					}
-					return item;
-				});
-			}
-			return hands;
+		let play;
+		if(!(block.match(playerid)&&block.match('GameState.DebugPrintPower()')))return play;
+		if(block.match('BLOCK_START BlockType=PLAY')){
+			const playcard=block.match(/TAG_CHANGE Entity=\[.*?\] tag=ZONE value=PLAY/);
+			const idMatch = playcard[0].match(/cardId=([^\s]+)\b/);
+			play=praseCardID(Cards, idMatch[1]);
 		}
-		return null;
+		return play;
 	} catch (e) {
 		console.error(e);
 	}
 }
-//解析玩家换牌
-function function2(hands) {
-	const arr2Copy = ['a','b','c'];
-	const arr1Copy = [ 'The Demon Seed', 'Raise Dead','Darkglare' ];
-	return hands.map(item => {
-		const index = arr1Copy.indexOf(item);
-		if (index !== -1) {
-			const replacement = arr2Copy[index];
-			arr1Copy.splice(index, 1);
-			arr2Copy.splice(index, 1);
-			return replacement;
-		}
-		return item;
-	});
-}
 //解析玩家抽牌
-function detectDrawCard(block,Cards){
-	let drawcard=null;
-	try{
-		const result=block.match(/TAG_CHANGE Entity=GameEntity tag=NUM_TURNS_IN_PLAY value=([\s\S]*?)TAG_CHANGE Entity=GameEntity tag=NEXT_STEP value=MAIN_END/);
-		if(result){
-			drawcard=[];
-			const cards=result[0].trim().matchAll(/SHOW_ENTITY - Updating Entity=\[.*?\] CardID=([^\s]+)/g);
-			for(const match of cards){
-				drawcard.push(praseCardID(Cards,match[1]));
+function detectDrawCard(block,Cards,playerid) {
+	let drawcard;
+	try {
+		if(!(block.match(playerid)&&block.match('GameState.DebugPrintPower()')))return drawcard;
+		const result = block.match(
+			/TAG_CHANGE Entity=GameEntity tag=NUM_TURNS_IN_PLAY value=([\s\S]*?)TAG_CHANGE Entity=GameEntity tag=NEXT_STEP value=MAIN_END/
+			);
+		if (result) {
+			drawcard = [];
+			const cards = result[0].trim().matchAll(/SHOW_ENTITY - Updating Entity=\[.*?\] CardID=([^\s]+)/g);
+			for (const match of cards) {
+				drawcard.push(praseCardID(Cards, match[1]));
+			}
+		}else if(block.match('NUM_CARDS_DRAWN_THIS_TURN')){
+			drawcard = [];
+			const cards = block.matchAll(/SHOW_ENTITY - Updating Entity=\[.*?\] CardID=([^\s]+)/g);
+			for (const match of cards) {
+				drawcard.push(praseCardID(Cards, match[1]));
 			}
 		}
-	return drawcard;	
-	}catch(e){
+		return drawcard;
+	} catch (e) {
 		console.error(e);
 	}
 }
-
 (async function(){
 	await initialize();
-	const c=detectDrawCard(`D 12:42:50.7905301 GameState.DebugPrintPowerList() - Count=36
-	D 12:42:50.7905301 GameState.DebugPrintPower() - TAG_CHANGE Entity=GameEntity tag=STEP value=MAIN_READY 
-	D 12:42:50.7905301 GameState.DebugPrintPower() - BLOCK_START BlockType=TRIGGER Entity=刚裂的夏侯惇#5866 EffectCardId=System.Collections.Generic.List1[System.String] EffectIndex=-1 Target=0 SubOption=-1 TriggerKeyword=TAG_NOT_SET
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=GameEntity tag=NUM_TURNS_IN_PLAY value=1 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=大魔王加菲猫#5996 tag=NUM_TURNS_IN_PLAY value=1 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=NUM_TURNS_IN_PLAY value=1 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=Banshee Tyrande id=87 zone=PLAY zonePos=0 cardId=HERO_09x player=1] tag=NUM_TURNS_IN_PLAY value=1 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=Lesser Heal id=88 zone=PLAY zonePos=0 cardId=HERO_09dbp player=1] tag=NUM_TURNS_IN_PLAY value=1 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=Nemsy Necrofizzle id=89 zone=PLAY zonePos=0 cardId=HERO_07a player=2] tag=NUM_TURNS_IN_PLAY value=1 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=Life Tap id=90 zone=PLAY zonePos=0 cardId=CS2_056_H1 player=2] tag=NUM_TURNS_IN_PLAY value=1 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=RESOURCES value=1 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=GameEntity tag=NEXT_STEP value=MAIN_START_TRIGGERS 
-	D 12:42:50.7905301 GameState.DebugPrintPower() - BLOCK_END
-	D 12:42:50.7905301 GameState.DebugPrintPower() - TAG_CHANGE Entity=GameEntity tag=STEP value=MAIN_START_TRIGGERS 
-	D 12:42:50.7905301 GameState.DebugPrintPower() - BLOCK_START BlockType=TRIGGER Entity=刚裂的夏侯惇#5866 EffectCardId=System.Collections.Generic.List1[System.String] EffectIndex=-1 Target=0 SubOption=-1 TriggerKeyword=TAG_NOT_SET
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=GameEntity tag=NEXT_STEP value=MAIN_START 
-	D 12:42:50.7905301 GameState.DebugPrintPower() - BLOCK_END
-	D 12:42:50.7905301 GameState.DebugPrintPower() - TAG_CHANGE Entity=GameEntity tag=STEP value=MAIN_START 
-	D 12:42:50.7905301 GameState.DebugPrintPower() - BLOCK_START BlockType=TRIGGER Entity=刚裂的夏侯惇#5866 EffectCardId=System.Collections.Generic.List1[System.String] EffectIndex=-1 Target=0 SubOption=-1 TriggerKeyword=TAG_NOT_SET
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=2166 value=80 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=467 value=1 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     SHOW_ENTITY - Updating Entity=[entityName=UNKNOWN ENTITY [cardType=INVALID] id=80 zone=DECK zonePos=0 cardId= player=2] CardID=SCH_514
-	D 12:42:50.7905301 GameState.DebugPrintPower() -         tag=CONTROLLER value=2
-	D 12:42:50.7905301 GameState.DebugPrintPower() -         tag=CARDTYPE value=SPELL
-	D 12:42:50.7905301 GameState.DebugPrintPower() -         tag=ZONE value=HAND
-	D 12:42:50.7905301 GameState.DebugPrintPower() -         tag=ENTITY_ID value=80
-	D 12:42:50.7905301 GameState.DebugPrintPower() -         tag=RARITY value=COMMON
-	D 12:42:50.7905301 GameState.DebugPrintPower() -         tag=478 value=2
-	D 12:42:50.7905301 GameState.DebugPrintPower() -         tag=MULTI_CLASS_GROUP value=5
-	D 12:42:50.7905301 GameState.DebugPrintPower() -         tag=1037 value=2
-	D 12:42:50.7905301 GameState.DebugPrintPower() -         tag=1043 value=1
-	D 12:42:50.7905301 GameState.DebugPrintPower() -         tag=1068 value=0
-	D 12:42:50.7905301 GameState.DebugPrintPower() -         tag=SPAWN_TIME_COUNT value=1
-	D 12:42:50.7905301 GameState.DebugPrintPower() -         tag=SPELL_SCHOOL value=6
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=UNKNOWN ENTITY [cardType=INVALID] id=80 zone=DECK zonePos=0 cardId= player=2] tag=NUM_TURNS_IN_HAND value=1 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=UNKNOWN ENTITY [cardType=INVALID] id=80 zone=DECK zonePos=0 cardId= player=2] tag=ZONE_POSITION value=4 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=UNKNOWN ENTITY [cardType=INVALID] id=80 zone=DECK zonePos=0 cardId= player=2] tag=ZONE_POSITION value=0 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=UNKNOWN ENTITY [cardType=INVALID] id=80 zone=DECK zonePos=0 cardId= player=2] tag=ZONE_POSITION value=4 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=3242 value=1 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=NUM_CARDS_DRAWN_THIS_TURN value=1 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=995 value=1 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=UNKNOWN ENTITY [cardType=INVALID] id=80 zone=DECK zonePos=0 cardId= player=2] tag=1570 value=1 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=467 value=0 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=GameEntity tag=NEXT_STEP value=MAIN_ACTION 
-	D 12:42:50.7905301 GameState.DebugPrintPower() - BLOCK_END
-	D 12:42:50.7905301 GameState.DebugPrintPower() - TAG_CHANGE Entity=GameEntity tag=STEP value=MAIN_ACTION 
-	D 12:42:50.7905301 GameState.DebugPrintPower() - BLOCK_START BlockType=TRIGGER Entity=刚裂的夏侯惇#5866 EffectCardId=System.Collections.Generic.List1[System.String] EffectIndex=-1 Target=0 SubOption=-1 TriggerKeyword=TAG_NOT_SET
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=GameEntity tag=NEXT_STEP value=MAIN_END 
-	D 12:42:50.7905301 GameState.DebugPrintPower() - BLOCK_END
-	`,cardsdata);
-	console.log(c);
+	const c=detectPlayCard(`
+	Power.log updated: D 18:06:23.8485131 GameState.DebugPrintPowerList() - Count=25
+	D 18:06:23.8485131 GameState.DebugPrintPower() - BLOCK_START BlockType=PLAY Entity=[entityName=The Coin id=68 zone=HAND zonePos=5 cardId=MUDAN_COIN1 player=1] EffectCardId=System.Collections.Generic.List1[System.String] EffectIndex=0 Target=0 SubOption=-1
+	D 18:06:23.8485131 GameState.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=NUM_CARDS_PLAYED_THIS_TURN value=1
+	D 18:06:23.8485131 GameState.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=430 value=1
+	D 18:06:23.8485131 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=The Coin id=68 zone=HAND zonePos=5 cardId=MUDAN_COIN1 player=1] tag=JUST_PLAYED value=1 
+	D 18:06:23.8485131 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=The Coin id=68 zone=HAND zonePos=5 cardId=MUDAN_COIN1 player=1] tag=3557 value=5        
+	D 18:06:23.8485131 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=The Coin id=68 zone=HAND zonePos=5 cardId=MUDAN_COIN1 player=1] tag=1068 value=1        
+	D 18:06:23.8485131 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=The Coin id=68 zone=HAND zonePos=5 cardId=MUDAN_COIN1 player=1] tag=1068 value=0        
+	D 18:06:23.8485131 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=Scarab Keychain id=16 zone=HAND zonePos=6 cardId=TOY_006 player=1] tag=ZONE_POSITION value=5
+	D 18:06:23.8485131 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=The Coin id=68 zone=HAND zonePos=5 cardId=MUDAN_COIN1 player=1] tag=ZONE_POSITION value=0
+	D 18:06:23.8485131 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=The Coin id=68 zone=HAND zonePos=5 cardId=MUDAN_COIN1 player=1] tag=SPAWN_TIME_COUNT value=0
+	D 18:06:23.8485131 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=The Coin id=68 zone=HAND zonePos=5 cardId=MUDAN_COIN1 player=1] tag=SPAWN_TIME_COUNT value=1
+	D 18:06:23.8485131 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=The Coin id=68 zone=HAND zonePos=5 cardId=MUDAN_COIN1 player=1] tag=ZONE value=PLAY     
+	D 18:06:23.8485131 GameState.DebugPrintPower() -     META_DATA - Meta=SLUSH_TIME Data=3000 InfoCount=1
+	D 18:06:23.8485131 GameState.DebugPrintPower() -                 Info[0] = [entityName=The Coin id=68 zone=HAND zonePos=5 cardId=MUDAN_COIN1 player=1]
+	D 18:06:23.8485131 GameState.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=NUM_SPELLS_PLAYED_THIS_GAME value=1
+	D 18:06:23.8485131 GameState.DebugPrintPower() -     BLOCK_START BlockType=POWER Entity=[entityName=The Coin id=68 zone=HAND zonePos=5 cardId=MUDAN_COIN1 player=1] EffectCardId=System.Collections.Generic.List1[System.String] EffectIndex=0 Target=0 SubOption=-1
+	D 18:06:23.8485131 GameState.DebugPrintPower() -         TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=TEMP_RESOURCES value=1
+	D 18:06:23.8485131 GameState.DebugPrintPower() -     BLOCK_END
+	D 18:06:23.8485131 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=The Coin id=68 zone=HAND zonePos=5 cardId=MUDAN_COIN1 player=1] tag=1068 value=4        
+	D 18:06:23.8485131 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=The Coin id=68 zone=HAND zonePos=5 cardId=MUDAN_COIN1 player=1] tag=1068 value=0        
+	D 18:06:23.8485131 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=The Coin id=68 zone=HAND zonePos=5 cardId=MUDAN_COIN1 player=1] tag=ZONE value=GRAVEYARD
 	
+	D 18:06:23.8485131 GameState.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=COMBO_ACTIVE value=1
+	D 18:06:23.8485131 GameState.DebugPrintPower() -     TAG_CHANGE Entity=GameEntity tag=1323 value=2
+	D 18:06:23.8485131 GameState.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=NUM_OPTIONS_PLAYED_THIS_TURN value=1
+	D 18:06:23.8485131 GameState.DebugPrintPower() - BLOCK_END
+	D 18:06:23.8485131 GameState.DebugPrintPower() - META_DATA - Meta=SLUSH_TIME Data=1000 InfoCount=1
+	D 18:06:23.8485131 GameState.DebugPrintPower() -             Info[0] = [entityName=The Coin id=68 zone=HAND zonePos=5 cardId=MUDAN_COIN1 player=1]
+	D 18:06:23.8485131 PowerTaskList.DebugDump() - ID=44 ParentID=0 PreviousID=0 TaskCount=13
+	D 18:06:23.8485131 PowerTaskList.DebugPrintPower() - BLOCK_START BlockType=PLAY Entity=[entityName=The Coin id=68 zone=HAND zonePos=5 cardId=MUDAN_COIN1 player=1] EffectCardId=System.Collections.Generic.List1[System.String] EffectIndex=0 Target=0 SubOption=-1
+	D 18:06:23.8485131 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=NUM_CARDS_PLAYED_THIS_TURN value=1
+	D 18:06:23.8485131 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=430 value=1
+	D 18:06:23.8485131 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=The Coin id=68 zone=HAND zonePos=5 cardId=MUDAN_COIN1 player=1] tag=JUST_PLAYED value=1
+	D 18:06:23.8485131 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=The Coin id=68 zone=HAND zonePos=5 cardId=MUDAN_COIN1 player=1] tag=3557 value=5    
+	D 18:06:23.8485131 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=The Coin id=68 zone=HAND zonePos=5 cardId=MUDAN_COIN1 player=1] tag=1068 value=1    
+	D 18:06:23.8485131 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=The Coin id=68 zone=HAND zonePos=5 cardId=MUDAN_COIN1 player=1] tag=1068 value=0    
+	D 18:06:23.8485131 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=Scarab Keychain id=16 zone=HAND zonePos=6 cardId=TOY_006 player=1] tag=ZONE_POSITION value=5
+	D 18:06:23.8485131 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=The Coin id=68 zone=HAND zonePos=5 cardId=MUDAN_COIN1 player=1] tag=ZONE_POSITION value=0
+	D 18:06:23.8485131 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=The Coin id=68 zone=HAND zonePos=5 cardId=MUDAN_COIN1 player=1] tag=SPAWN_TIME_COUNT value=0
+	D 18:06:23.8485131 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=The Coin id=68 zone=HAND zonePos=5 cardId=MUDAN_COIN1 player=1] tag=SPAWN_TIME_COUNT value=1
+	D 18:06:23.8485131 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=The Coin id=68 zone=HAND zonePos=5 cardId=MUDAN_COIN1 player=1] tag=ZONE value=PLAY 
+	D 18:06:23.8485131 PowerTaskList.DebugPrintPower() -     META_DATA - Meta=SLUSH_TIME Data=3000 InfoCount=1
+	D 18:06:23.8485131 PowerTaskList.DebugPrintPower() -                 Info[0] = [entityName=The Coin id=68 zone=HAND zonePos=5 cardId=MUDAN_COIN1 player=1]
+	D 18:06:23.8485131 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=NUM_SPELLS_PLAYED_THIS_GAME value=1
+	D 18:06:23.8485131 PowerTaskList.DebugDump() - Block End=(null)
+	D 18:06:23.8485131 PowerProcessor.PrepareHistoryForCurrentTaskList() - m_currentTaskList=44
+	D 18:06:23.8485131 PowerProcessor.DoTaskListForCard() - unhandled BlockType PLAY for sourceEntity [entityName=The Coin id=68 zone=HAND zonePos=5 cardId=MUDAN_COIN1 player=1]
+	D 18:06:23.8659655 GameState.DebugPrintOptions() - id=4
+	D 18:06:23.8659655 GameState.DebugPrintOptions() -   option 0 type=END_TURN mainEntity= error=INVALID errorParam=
+	D 18:06:23.8659655 GameState.DebugPrintOptions() -   option 1 type=POWER mainEntity=[entityName=Moonstone Mauler id=17 zone=HAND zonePos=1 cardId=GDB_435 player=1] error=NONE errorParam=
+	D 18:06:23.8659655 GameState.DebugPrintOptions() -   option 2 type=POWER mainEntity=[entityName=Birdwatching id=27 zone=HAND zonePos=2 cardId=VAC_408 player=1] error=NONE errorParam=
+	D 18:06:23.8659655 GameState.DebugPrintOptions() -   option 3 type=POWER mainEntity=[entityName=Patchwork Pals id=32 zone=HAND zonePos=3 cardId=TOY_353 player=1] error=NONE errorParam=
+	D 18:06:23.8659655 GameState.DebugPrintOptions() -   option 4 type=POWER mainEntity=[entityName=Safety Inspector id=29 zone=HAND zonePos=4 cardId=DMF_125 player=1] error=NONE errorParam=
+	D 18:06:23.8659655 GameState.DebugPrintOptions() -   option 5 type=POWER mainEntity=[entityName=Scarab Keychain id=16 zone=HAND zonePos=5 cardId=TOY_006 player=1] error=NONE errorParam=
+	D 18:06:23.8659655 GameState.DebugPrintOptions() -   option 6 type=POWER mainEntity=[entityName=Steady Shot id=65 zone=PLAY zonePos=0 cardId=HERO_05bp player=1] error=NONE errorParam=
+	D 18:06:23.8659655 GameState.DebugPrintOptions() -   option 7 type=POWER mainEntity=[entityName=Rexxar id=64 zone=PLAY zonePos=0 cardId=HERO_05 player=1] error=REQ_ATTACK_GREATER_THAN_0 errorParam=
+	D 18:06:23.8659655 GameState.DebugPrintOptions() -   option 8 type=POWER mainEntity=[entityName=Cardslinger Saraad id=66 zone=PLAY zonePos=0 cardId=HERO_08ar_Saraad player=2] error=REQ_YOUR_TURN errorParam=
+	D 18:06:23.8659655 GameState.DebugPrintOptions() -   option 9 type=POWER mainEntity=[entityName=Fireblast id=67 zone=PLAY zonePos=0 cardId=HERO_08fbp player=2] error=REQ_YOUR_TURN errorParam=
+	D 18:06:23.8659655 GameState.DebugPrintOptions() -   option 10 type=POWER mainEntity=[entityName=Babbling Book id=50 zone=PLAY zonePos=1 cardId=CORE_KAR_009 player=2] error=REQ_YOUR_TURN errorParam=
+	D 18:06:23.8659655 PowerProcessor.EndCurrentTaskList() - m_currentTaskList=44
+	D 18:06:23.8822353 PowerTaskList.DebugDump() - ID=45 ParentID=44 PreviousID=0 TaskCount=1
+	D 18:06:23.8822353 PowerTaskList.DebugPrintPower() - BLOCK_START BlockType=POWER Entity=[entityName=The Coin id=68 zone=PLAY zonePos=0 cardId=MUDAN_COIN1 player=1] EffectCardId=System.Collections.Generic.List1[System.String] EffectIndex=0 Target=0 SubOption=-1
+	D 18:06:23.8822353 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=TEMP_RESOURCES value=1
+	D 18:06:23.8822353 PowerTaskList.DebugPrintPower() - BLOCK_END
+	D 18:06:23.8822353 PowerProcessor.PrepareHistoryForCurrentTaskList() - m_currentTaskList=45
+	D 18:06:23.8822353 PowerProcessor.EndCurrentTaskList() - m_currentTaskList=45
+	D 18:06:23.8822353 PowerTaskList.DebugDump() - ID=46 ParentID=0 PreviousID=44 TaskCount=6
+	D 18:06:23.8822353 PowerTaskList.DebugDump() - Block Start=(null)
+	D 18:06:23.8822353 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=The Coin id=68 zone=PLAY zonePos=0 cardId=MUDAN_COIN1 player=1] tag=1068 value=4    
+	D 18:06:23.8822353 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=The Coin id=68 zone=PLAY zonePos=0 cardId=MUDAN_COIN1 player=1] tag=1068 value=0    
+	D 18:06:23.8822353 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=The Coin id=68 zone=PLAY zonePos=0 cardId=MUDAN_COIN1 player=1] tag=ZONE value=GRAVEYARD
+	D 18:06:23.8822353 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=COMBO_ACTIVE value=1
+	D 18:06:23.8822353 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=GameEntity tag=1323 value=2
+	D 18:06:23.8822353 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=NUM_OPTIONS_PLAYED_THIS_TURN value=1
+	D 18:06:23.8822353 PowerTaskList.DebugPrintPower() - BLOCK_END
+	D 18:06:23.8822353 PowerProcessor.PrepareHistoryForCurrentTaskList() - m_currentTaskList=46
+	D 18:06:23.8822353 PowerProcessor.DoTaskListForCard() - unhandled BlockType PLAY for sourceEntity [entityName=The Coin id=68 zone=PLAY zonePos=0 cardId=MUDAN_COIN1 player=1]
 
+	`,cardsdata,'刚裂的夏侯惇');
+	console.log(c);
 })();

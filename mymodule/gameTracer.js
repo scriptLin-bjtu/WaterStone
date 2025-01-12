@@ -81,19 +81,63 @@ function findSwitchCards(block, playerid, hands, cards) {
 	}
 }
 //解析玩家抽牌
-function detectDrawCard(block,Cards){
+function detectDrawCard(block,Cards,playerid) {
 	let drawcard;
-	try{
-		const result=block.match(/TAG_CHANGE Entity=GameEntity tag=NUM_TURNS_IN_PLAY value=([\s\S]*?)TAG_CHANGE Entity=GameEntity tag=NEXT_STEP value=MAIN_END/);
-		if(result){
-			drawcard=[];
-			const cards=result[0].trim().matchAll(/SHOW_ENTITY - Updating Entity=\[.*?\] CardID=([^\s]+)/g);
-			for(const match of cards){
-				drawcard.push(praseCardID(Cards,match[1]));
+	try {
+		if(!(block.match(playerid)&&block.match('GameState.DebugPrintPower()')))return drawcard;
+		const result = block.match(
+			/TAG_CHANGE Entity=GameEntity tag=NUM_TURNS_IN_PLAY value=([\s\S]*?)TAG_CHANGE Entity=GameEntity tag=NEXT_STEP value=MAIN_END/
+			);
+		if (result) {
+			drawcard = [];
+			const cards = result[0].trim().matchAll(/SHOW_ENTITY - Updating Entity=\[.*?\] CardID=([^\s]+)/g);
+			for (const match of cards) {
+				drawcard.push(praseCardID(Cards, match[1]));
+			}
+		}else if(block.match('NUM_CARDS_DRAWN_THIS_TURN')){
+			drawcard = [];
+			const cards = block.matchAll(/SHOW_ENTITY - Updating Entity=\[.*?\] CardID=([^\s]+)/g);
+			for (const match of cards) {
+				drawcard.push(praseCardID(Cards, match[1]));
 			}
 		}
-	return drawcard;	
-	}catch(e){
+		return drawcard;
+	} catch (e) {
+		console.error(e);
+	}
+}
+//解析玩家洗牌
+function detectShuffleCard(block, Cards,playerid) {
+	let shufflecards;
+	try {
+		if(!(block.match(playerid)&&block.match('GameState.DebugPrintPower()')))return shufflecards;
+		const matchs=block.match(/HIDE_ENTITY - Entity=\[.*?\] tag=ZONE value=DECK/);
+		if(matchs){
+			shufflecards=[];
+			matchs.forEach(match=>{
+				const idMatch = match.match(/cardId=([^\s]+)\b/);
+				shufflecards.push(praseCardID(Cards, idMatch[1]));
+			});
+		}else{
+			//检测洗入的生成的牌
+		}
+		return shufflecards;
+	} catch (e) {
+		console.error(e);
+	}
+}
+//解析玩家打出牌
+function detectPlayCard(block, Cards,playerid) {
+	try {
+		let play;
+		if(!(block.match(playerid)&&block.match('GameState.DebugPrintPower()')))return play;
+		if(block.match('BLOCK_START BlockType=PLAY')){
+			const playcard=block.match(/TAG_CHANGE Entity=\[.*?\] tag=ZONE value=PLAY/);
+			const idMatch = playcard[0].match(/cardId=([^\s]+)\b/);
+			play=praseCardID(Cards, idMatch[1]);
+		}
+		return play;
+	} catch (e) {
 		console.error(e);
 	}
 }
@@ -111,4 +155,4 @@ exports.findStartingHand = findStartingHand;
 exports.praseCardID = praseCardID;
 exports.findSwitchCards = findSwitchCards;
 exports.detectGameOver = detectGameOver;
-exports.detectDrawCard=detectDrawCard;
+exports.detectDrawCard = detectDrawCard;

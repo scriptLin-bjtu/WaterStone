@@ -100,6 +100,8 @@
 			const input = document.querySelector('#deck');
 			let manaCostChart = null; // 保存manaCost图表实例
 			let cardTypeChart = null; // 保存cardType图表实例
+			
+			
 
 
 			async function decode(deckcode, token) {
@@ -259,6 +261,7 @@
 				console.log(result);
 				loadDeck(result);
 				loadChart(result);
+
 			});
 		</script>
 	</body>

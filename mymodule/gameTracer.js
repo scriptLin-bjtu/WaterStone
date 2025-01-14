@@ -111,7 +111,7 @@ function detectShuffleCard(block, Cards,playerid) {
 	let shufflecards;
 	try {
 		if(!(block.match(playerid)&&block.match('GameState.DebugPrintPower()')))return shufflecards;
-		const matchs=block.match(/HIDE_ENTITY - Entity=\[.*?\] tag=ZONE value=DECK/);
+		const matchs=block.match(/HIDE_ENTITY - Entity=\[.*?\] tag=ZONE value=DECK/g);
 		if(matchs){
 			shufflecards=[];
 			matchs.forEach(match=>{
@@ -120,6 +120,15 @@ function detectShuffleCard(block, Cards,playerid) {
 			});
 		}else{
 			//检测洗入的生成的牌
+			//检测生成的法术
+			if(block.match("SUB_SPELL_START")&&block.match("SHUFFLE_DECK")){
+				shufflecards=[];
+				const subs=block.match(/SHOW_ENTITY[\s\S]*?HIDE_ENTITY/g);
+				subs.forEach(sub=>{
+					const idMatch=sub.match(/CardID=([^\s]+)\b/);
+					shufflecards.push(praseCardID(Cards, idMatch[1]));
+				});
+			}
 		}
 		return shufflecards;
 	} catch (e) {

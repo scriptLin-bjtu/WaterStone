@@ -1,3 +1,21 @@
+//出牌逻辑更新
+function PlayCardUpdate(hand,playcards,play){
+	const updatedHand = [...hand]; 
+	const updatedPlay = play.concat(playcards); 
+	
+	// 删除 hand 中与 playcards 匹配的元素（逐一匹配）
+	for (const card of playcards) {
+		const index = updatedHand.indexOf(card);
+		if (index !== -1) {
+			updatedHand.splice(index, 1); // 删除第一个匹配的元素
+		}
+	}
+	return {
+		hand: updatedHand,
+		play: updatedPlay
+	};
+}
+
 //抽牌更新逻辑
 function DrawCardUpdate(hand, drawcards, deck) {
 	const updatedHand = hand.concat(drawcards); // 复制 hand 以避免修改原数组
@@ -78,10 +96,8 @@ function ResetUpdate(hand, deck) {
 }
 
 
-let hand=['a','a','b','c','d'];
-let deck=['d','e','f','g','g'];
-let switchcards={
-	old:['a','b'],
-	new:['f','g']
-}
-console.log(SwitchCardUpdate(hand,switchcards,deck));
+exports.DrawCardUpdate=DrawCardUpdate;
+exports.SwitchCardUpdate=SwitchCardUpdate;
+exports.ShuffleCardUpdate=ShuffleCardUpdate;
+exports.ResetUpdate=ResetUpdate;
+exports.PlayCardUpdate=PlayCardUpdate;

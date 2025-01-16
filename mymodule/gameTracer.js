@@ -42,7 +42,7 @@ function findStartingHand(block) {
 	}
 }
 //解析玩家换牌
-function findSwitchCards(block, playerid, hands, cards) {
+function findSwitchCards(block, playerid, cards) {
 	try {
 		const reg1 = new RegExp(`TAG_CHANGE Entity=${playerid} tag=MULLIGAN_STATE value=DEALING`);
 		const reg2 = new RegExp(`TAG_CHANGE Entity=${playerid} tag=MULLIGAN_STATE value=WAITING`);
@@ -51,8 +51,8 @@ function findSwitchCards(block, playerid, hands, cards) {
 		);
 		if (block.match(reg1) && block.match(reg2)) {
 			const result = block.match(reg3)[1].trim();
-			const cards1 = result.match(/SHOW_ENTITY - Updating Entity=\[.*?\] CardID=([^\s]+)/g); //替换的卡牌数组
-			const cards2 = result.match(/HIDE_ENTITY - Entity=\[.*?cardId=([^\s]+).*?\] tag=ZONE value=DECK/g) //新换的卡牌数组
+			const cards1 = result.match(/SHOW_ENTITY - Updating Entity=\[.*?\] CardID=([^\s]+)/g); //新换的卡牌数组
+			const cards2 = result.match(/HIDE_ENTITY - Entity=\[.*?cardId=([^\s]+).*?\] tag=ZONE value=DECK/g) //替换的卡牌数组
 			if (cards1 && cards2) {
 				const c1 = cards1.map(result => {
 					return praseCardID(cards, result.match(/CardID=([^\s]+)/)[1]);
@@ -62,18 +62,11 @@ function findSwitchCards(block, playerid, hands, cards) {
 				});
 				const arr2Copy = [...c1];
 				const arr1Copy = [...c2];
-				return hands.map(item => {
-					const index = arr1Copy.indexOf(item);
-					if (index !== -1) {
-						const replacement = arr2Copy[index];
-						arr1Copy.splice(index, 1);
-						arr2Copy.splice(index, 1);
-						return replacement;
-					}
-					return item;
-				});
+				return {
+					old:arr1Copy,
+					new:arr2Copy
+				}
 			}
-			return hands;
 		}
 		return null;
 	} catch (e) {
@@ -84,7 +77,7 @@ function findSwitchCards(block, playerid, hands, cards) {
 function detectDrawCard(block,Cards,playerid) {
 	let drawcard;
 	try {
-		if(!(block.match(playerid)&&block.match('GameState.DebugPrintPower()')))return drawcard;
+		if(!(block.match('GameState.DebugPrintPower()')))return drawcard;
 		const result = block.match(
 			/TAG_CHANGE Entity=GameEntity tag=NUM_TURNS_IN_PLAY value=([\s\S]*?)TAG_CHANGE Entity=GameEntity tag=NEXT_STEP value=MAIN_END/
 			);
@@ -165,3 +158,5 @@ exports.praseCardID = praseCardID;
 exports.findSwitchCards = findSwitchCards;
 exports.detectGameOver = detectGameOver;
 exports.detectDrawCard = detectDrawCard;
+exports.detectPlayCard=detectPlayCard;
+exports.detectShuffleCard=detectShuffleCard;

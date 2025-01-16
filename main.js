@@ -10,8 +10,17 @@ const {
 	praseCardID,
 	detectGameOver,
 	findSwitchCards,
-	detectDrawCard
+	detectDrawCard,
+	detectPlayCard,
+	detectShuffleCard
 } = require('./mymodule/gameTracer.js');
+const {
+	ShuffleCardUpdate,
+	SwitchCardUpdate,
+	ResetUpdate,
+	DrawCardUpdate
+	PlayCardUpdate
+}=require('./mymodule/gameState.js');
 const token = 'EU0AAthRMPTDMbEA9nivDDa7aRb9Qbejn3';
 let deckInfo = null;
 let filePath = '';
@@ -20,7 +29,11 @@ let gameCode = 0;
 let cardsdata = null;
 let watcher = null;
 let handCards = [];
+let deckCards = [];
+let playCards =[];
+let Cardimgs=new Map();
 let playerID = null;
+
 //监控日志目录
 async function monitorLogDir() {
 	try {
@@ -80,10 +93,10 @@ function setupPowerLogFile(powerLogPath) {
 					end: curr.size,
 				});
 				stream.on('data', (chunk) => {
-					console.log('**********************************************');
-					console.log('Power.log updated:', chunk.toString());
-					console.log('**********************************************');
-					//gameControler(gameCode, chunk.toString());
+					// console.log('**********************************************');
+					// console.log('Power.log updated:', chunk.toString());
+					// console.log('**********************************************');
+					gameControler(gameCode, chunk.toString());
 				});
 				stream.on('end', () => {
 					lastSize = curr.size;
@@ -112,8 +125,13 @@ async function startWatchingDeck(deckLogPath) {
 					const deckCode = findDeckCode(chunk.toString());
 					if (deckCode) {
 						deckInfo = await decode(deckCode, token);
-						//console.log(deckInfo);
-						console.log('find deck info');
+						deckCards=[];
+						Cardimgs=new Map();
+						deckInfo.cards.forEach(card=>{
+							deckCards.push(card.name);
+							Cardimgs.set(card.name,card.image);
+						});
+						console.log('find deck info and init deckcards and cardimgs');
 					}
 				});
 				stream.on('end', () => {
@@ -144,6 +162,20 @@ async function initialize() {
 		process.exit(1);
 	}
 }
+
+//从lowdb获取储存的token如果过期（12小时）或者没有，则重新获取
+async function tokenDetect(){
+	//获取token
+	const token1;
+	//获取上一次时间戳
+	const timestamp;
+	const newstamp=new Date().getTime();
+	if(newstamp-timestamp>43200000){
+		token;//请求获取新的token，并且储存新的token到db，储存新时间到db
+	}else{
+		token=token1;
+	}
+}
 // 游戏控制器逻辑
 async function gameControler(code, content) {
 		switch (code) {
@@ -160,24 +192,48 @@ async function gameControler(code, content) {
 				if (hands) {
 					const cardNames = hands.map(cardid => praseCardID(cardsdata, cardid));
 					console.log('检测到初始手牌:' + cardNames);
+					const drawobj=DrawCardUpdate(handCards,cardNames,deckCards);
+					handCards=drawobj.hand;
+					deckCards=drawobj.deck;
 					gameCode = 2;
 				}
 				break;
 			case 2: //换牌阶段
-				const result = findSwitchCards(content, playerID, handCards, cardsdata);
+				const result = findSwitchCards(content, playerID, cardsdata);
 				if (result) {
-					handCards = result;
+					const switchobj=SwitchCardUpdate(handCards,result,deckCards);
+					handCards=switchobj.hand;
+					deckCards=switchobj.deck;
 				}
 				console.log('检测到玩家替换后手牌:' + handCards);
 				gameCode = 3;
 				break;
 			case 3: //对战阶段
-				const drawcards = detectDrawCard(content, cardsdata)
+				const drawcards = detectDrawCard(content, cardsdata,playerID);
+				const playedcards=detectPlayCard(content,cardsdata,playerID);
+				const shufflecards=detectShuffleCard(content,cardsdata,playerID);
 				if (drawcards) {
-					console.log('检测到玩家回合开始抽牌:' + drawcards);
-					handCards.push(...drawcards);
-				} else
+					console.log('检测到玩家抽牌:' + drawcards);
+					const drawobj=DrawCardUpdate(handCards,drawcards,deckCards);
+					handCards=drawobj.hand;
+					deckCards=drawobj.deck;
+				}
+				if(playedcards){
+					console.log('检测到玩家出牌:' + playCards);
+					const playobj=PlayCardUpdate(handCards,playedcards,playCards);
+					handCards=playobj.hand;
+					playCards=playobj.play;
+				}
+				if(shufflecards){
+					console.log('检测到玩家洗牌:' + shufflecards);
+					const shuffleobj=ShuffleCardUpdate(handCards,shufflecards,deckCards);
+					handCards=shuffleobj.hand;
+					deckCards=shuffleobj.deck;
+				}
 				if (detectGameOver(content)) {
+					const overobj=ResetUpdate(handCards,deckCards);
+					handCards=overobj.hand;
+					deckCards=overobj.deck;
 					console.log('检测到游戏结束');
 					gameCode = 1;
 				}

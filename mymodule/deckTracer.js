@@ -1,13 +1,15 @@
 function findDeckCode(content) {
-	if (content.includes('Finding Game With Deck')) {
-		const match = content.match(/AAE[\w+=]+/);
-		return match ? match[0] : null;
-	};
-	return null;
+    if (content.includes('Finding Game With Deck')) {
+        const match = content.match(/AAE.+/);
+        return match ? match[0] : null;
+    }
+    return null;
 }
+
 
 async function decode(deckcode, token) {
 	try {
+		//console.log(deckcode,token);
 		const response = await fetch(
 			`https://us.api.blizzard.com/hearthstone/deck?code=${deckcode}&locale=en_US`, {
 				method: 'GET',

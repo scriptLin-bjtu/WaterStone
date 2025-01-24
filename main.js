@@ -1,5 +1,7 @@
 const fs = require('fs');
 const findLog = require('./mymodule/finddirmodule.js');
+const { LocalStorage } = require('node-localstorage');
+const localStorage = new LocalStorage('./userdata');
 const {
 	findDeckCode,
 	decode
@@ -18,10 +20,10 @@ const {
 	ShuffleCardUpdate,
 	SwitchCardUpdate,
 	ResetUpdate,
-	DrawCardUpdate
+	DrawCardUpdate,
 	PlayCardUpdate
 }=require('./mymodule/gameState.js');
-const token = 'EU0AAthRMPTDMbEA9nivDDa7aRb9Qbejn3';
+let start=true;
 let deckInfo = null;
 let filePath = '';
 let lastSize = 0;
@@ -33,6 +35,37 @@ let deckCards = [];
 let playCards =[];
 let Cardimgs=new Map();
 let playerID = null;
+let token = '';
+const clientId = '8fc521627888417f9780f71f3aa6e9b0';
+const clientSecret = 'yahsvIN51FO2PQfjnVhj7qE7l8bvZXRq';
+const credentials = btoa(`${clientId}:${clientSecret}`);
+// 获取token
+async function fetchOAuthToken() {
+  const url = 'https://oauth.battle.net/token';
+  const params = new URLSearchParams();
+  params.append('grant_type', 'client_credentials');
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${credentials}`, // Basic Auth
+        'Content-Type': 'application/x-www-form-urlencoded', // 表单数据
+      },
+      body: params.toString(), // 请求体
+    });
+
+    // 检查响应状态
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    // 解析 JSON 响应
+    const data = await response.json();
+	return data.access_token;
+  } catch (error) {
+    console.error('Error fetching OAuth token:', error);
+  }
+}
 
 //监控日志目录
 async function monitorLogDir() {
@@ -163,17 +196,22 @@ async function initialize() {
 	}
 }
 
-//从lowdb获取储存的token如果过期（12小时）或者没有，则重新获取
 async function tokenDetect(){
-	//获取token
-	const token1;
-	//获取上一次时间戳
-	const timestamp;
-	const newstamp=new Date().getTime();
-	if(newstamp-timestamp>43200000){
-		token;//请求获取新的token，并且储存新的token到db，储存新时间到db
-	}else{
-		token=token1;
+	try{
+		//获取token
+		const token1=localStorage.getItem('token');
+		//获取上一次时间戳
+		const timestamp=localStorage.getItem('timestamp');
+		const newstamp=new Date().getTime();
+		if(!token1||!timestamp||newstamp-timestamp>43200000){
+			token=await fetchOAuthToken();
+			localStorage.setItem('token',token);
+			localStorage.setItem('timestamp',newstamp);
+		}else{
+			token=token1;
+		}
+	}catch(e){
+		console.error('Failed to detecttoken:'+e);
 	}
 }
 // 游戏控制器逻辑
@@ -204,27 +242,33 @@ async function gameControler(code, content) {
 					const switchobj=SwitchCardUpdate(handCards,result,deckCards);
 					handCards=switchobj.hand;
 					deckCards=switchobj.deck;
+					console.log('检测到玩家替换后手牌:' + handCards);
+					gameCode = 3;
 				}
-				console.log('检测到玩家替换后手牌:' + handCards);
-				gameCode = 3;
 				break;
 			case 3: //对战阶段
 				const drawcards = detectDrawCard(content, cardsdata,playerID);
 				const playedcards=detectPlayCard(content,cardsdata,playerID);
-				const shufflecards=detectShuffleCard(content,cardsdata,playerID);
-				if (drawcards) {
+				let shufflecards=null;
+				if(!start){
+					shufflecards=detectShuffleCard(content,cardsdata,playerID);
+				}
+				if (drawcards&&drawcards.length>0) {
+					if(start){
+						start=false;
+					}
 					console.log('检测到玩家抽牌:' + drawcards);
 					const drawobj=DrawCardUpdate(handCards,drawcards,deckCards);
 					handCards=drawobj.hand;
 					deckCards=drawobj.deck;
 				}
-				if(playedcards){
-					console.log('检测到玩家出牌:' + playCards);
+				if(playedcards&&playedcards.length>0){
+					console.log('检测到玩家出牌:' + playedcards);
 					const playobj=PlayCardUpdate(handCards,playedcards,playCards);
 					handCards=playobj.hand;
 					playCards=playobj.play;
 				}
-				if(shufflecards){
+				if(shufflecards&&shufflecards.length>0){
 					console.log('检测到玩家洗牌:' + shufflecards);
 					const shuffleobj=ShuffleCardUpdate(handCards,shufflecards,deckCards);
 					handCards=shuffleobj.hand;
@@ -235,6 +279,7 @@ async function gameControler(code, content) {
 					handCards=overobj.hand;
 					deckCards=overobj.deck;
 					console.log('检测到游戏结束');
+					start=true;
 					gameCode = 1;
 				}
 				break;
@@ -242,6 +287,7 @@ async function gameControler(code, content) {
 		}
 	}
 	(async function() {
+		await tokenDetect();
 		await initialize();
 		await monitorLogDir();
 	})();

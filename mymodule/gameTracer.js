@@ -30,6 +30,7 @@ function findPlayerID(block) {
 function findStartingHand(block) {
 	try {
 		let hands;
+		if(!(block.match('PowerTaskList.DebugPrintPower()')))return null;
 		if (block.match(/TAG_CHANGE Entity=GameEntity tag=TURN value=1/)) {
 			const results = block.match(/SHOW_ENTITY - Updating Entity=\[.*?\] CardID=([^\s]+)/g); //捕获所有cardid
 			hands = results.map(result => {
@@ -77,7 +78,7 @@ function findSwitchCards(block, playerid, cards) {
 function detectDrawCard(block,Cards,playerid) {
 	let drawcard;
 	try {
-		if(!(block.match('GameState.DebugPrintPower()')))return drawcard;
+		if(!(block.match(playerid)&&block.match('GameState.DebugPrintPower()')))return drawcard;
 		const result = block.match(
 			/TAG_CHANGE Entity=GameEntity tag=NUM_TURNS_IN_PLAY value=([\s\S]*?)TAG_CHANGE Entity=GameEntity tag=NEXT_STEP value=MAIN_END/
 			);
@@ -89,7 +90,7 @@ function detectDrawCard(block,Cards,playerid) {
 			}
 		}else if(block.match('NUM_CARDS_DRAWN_THIS_TURN')){
 			drawcard = [];
-			const cards = block.matchAll(/SHOW_ENTITY - Updating Entity=\[.*?\] CardID=([^\s]+)/g);
+			const cards = block.matchAll(/GameState\.DebugPrintPower\(\).*SHOW_ENTITY - Updating Entity=\[.*?\] CardID=([^\s]+)/g);
 			for (const match of cards) {
 				drawcard.push(praseCardID(Cards, match[1]));
 			}
@@ -101,15 +102,17 @@ function detectDrawCard(block,Cards,playerid) {
 }
 //解析玩家洗牌
 function detectShuffleCard(block, Cards,playerid) {
-	let shufflecards;
 	try {
+		let shufflecards;
 		if(!(block.match(playerid)&&block.match('GameState.DebugPrintPower()')))return shufflecards;
 		const matchs=block.match(/HIDE_ENTITY - Entity=\[.*?\] tag=ZONE value=DECK/g);
 		if(matchs){
 			shufflecards=[];
 			matchs.forEach(match=>{
 				const idMatch = match.match(/cardId=([^\s]+)\b/);
-				shufflecards.push(praseCardID(Cards, idMatch[1]));
+				if(idMatch){
+					shufflecards.push(praseCardID(Cards, idMatch[1]));
+				}
 			});
 		}else{
 			//检测洗入的生成的牌
@@ -117,10 +120,14 @@ function detectShuffleCard(block, Cards,playerid) {
 			if(block.match("SUB_SPELL_START")&&block.match("SHUFFLE_DECK")){
 				shufflecards=[];
 				const subs=block.match(/SHOW_ENTITY[\s\S]*?HIDE_ENTITY/g);
-				subs.forEach(sub=>{
-					const idMatch=sub.match(/CardID=([^\s]+)\b/);
-					shufflecards.push(praseCardID(Cards, idMatch[1]));
-				});
+				if(subs){
+					subs.forEach(sub=>{
+						const idMatch=sub.match(/CardID=([^\s]+)\b/);
+						if(idMatch){
+							shufflecards.push(praseCardID(Cards, idMatch[1]));
+						}
+					});
+				}
 			}
 		}
 		return shufflecards;
@@ -135,8 +142,12 @@ function detectPlayCard(block, Cards,playerid) {
 		if(!(block.match(playerid)&&block.match('GameState.DebugPrintPower()')))return play;
 		if(block.match('BLOCK_START BlockType=PLAY')){
 			const playcard=block.match(/TAG_CHANGE Entity=\[.*?\] tag=ZONE value=PLAY/);
-			const idMatch = playcard[0].match(/cardId=([^\s]+)\b/);
-			play=praseCardID(Cards, idMatch[1]);
+			if(playcard){
+				const idMatch = playcard[0].match(/cardId=([^\s]+)\b/);
+				if(idMatch){
+					play=praseCardID(Cards, idMatch[1]);
+				}
+			}
 		}
 		return play;
 	} catch (e) {

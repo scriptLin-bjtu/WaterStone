@@ -10,6 +10,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "lowdb": "^7.0.1"
+    "node-localstorage": "^3.0.5"
   }
 }

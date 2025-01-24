@@ -1,3 +1,6 @@
+const { LocalStorage } = require('node-localstorage');
+const localStorage = new LocalStorage('./userdata');
+
 //抽牌更新逻辑
 function DrawCardUpdate(hand, drawcards, deck) {
 	const updatedHand = hand.concat(drawcards); // 复制 hand 以避免修改原数组
@@ -84,4 +87,17 @@ let switchcards={
 	old:['a','b'],
 	new:['f','g']
 }
-console.log(SwitchCardUpdate(hand,switchcards,deck));
+function findDeckCode(content) {
+    if (content.includes('Finding Game With Deck')) {
+        // 使用新的正则表达式匹配直到换行符或字符串结束
+        const match = content.match(/AAE.+/);
+        return match ? match[0] : null;
+    }
+    return null;
+}
+
+const content = `Finding Game With Deck
+AAEBAZrxBgqFF/W7ApG8Aq+RA//uA6+2BMygBdejBbOpBpHmBgrpsAPz3QP2nwT3nwSKyQT13QTungb8pQatpwa2tQYAAA==`;
+
+console.log(findDeckCode(content));
+// 输出： AAEBAZrxBgqFF/W7ApG8Aq+RA//uA6+2BMygBdejBbOpBpHmBgrpsAPz3QP2nwT3nwSKyQT13QTungb8pQatpwa2tQYAAA==

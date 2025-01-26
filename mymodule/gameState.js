@@ -95,6 +95,10 @@ function ResetUpdate(hand, deck) {
 	}
 }
 
+//套牌胜率更新逻辑
+function WinningRateUpdate(gameresult,deckname){
+	
+}
 
 exports.DrawCardUpdate=DrawCardUpdate;
 exports.SwitchCardUpdate=SwitchCardUpdate;

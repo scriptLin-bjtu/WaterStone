@@ -67,7 +67,7 @@ function findSwitchCards(block, playerid, cards) {
 					old:arr1Copy,
 					new:arr2Copy
 				}
-			}
+			}else return 'no-switch';
 		}
 		return null;
 	} catch (e) {
@@ -155,9 +155,21 @@ function detectPlayCard(block, Cards,playerid) {
 	}
 }
 //解析游戏结束
-function detectGameOver(block) {
+function detectGameOver(block,playerid) {
 	try {
-		if (block.match(/TAG_CHANGE Entity=GameEntity tag=STEP value=FINAL_GAMEOVER/)) return true;
+		if (block.match(/TAG_CHANGE Entity=GameEntity tag=STEP value=FINAL_GAMEOVER/)) {
+			let result;
+			let reg1=new RegExp(`TAG_CHANGE Entity=${playerid} tag=PLAYSTATE value=WON`);
+			let reg2=new RegExp(`TAG_CHANGE Entity=${playerid} tag=PLAYSTATE value=LOST`);
+			if(block.match(reg1)){
+				result='WON'
+			}else if(block.match(reg2)){
+				result='LOST'
+			}else{
+				result='TIE'
+			}
+			return result;
+		};
 		return false;
 	} catch (e) {
 		console.error(e);

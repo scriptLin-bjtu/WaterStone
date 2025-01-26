@@ -93,59 +93,68 @@ function detectShuffleCard(block, Cards,playerid) {
 		console.error(e);
 	}
 }
+
+//解析游戏结束
+function detectGameOver(block,playerid) {
+	try {
+		if (block.match(/TAG_CHANGE Entity=GameEntity tag=STEP value=FINAL_GAMEOVER/)) {
+			let result;
+			let reg1=new RegExp(`TAG_CHANGE Entity=${playerid} tag=PLAYSTATE value=WON`);
+			let reg2=new RegExp(`TAG_CHANGE Entity=${playerid} tag=PLAYSTATE value=LOST`);
+			if(block.match(reg1)){
+				result='WON'
+			}else if(block.match(reg2)){
+				result='LOST'
+			}
+			return result;
+		};
+		return false;
+	} catch (e) {
+		console.error(e);
+	}
+}
 (async function(){
 	await initialize();
-	const c=detectDrawCard(`
-	D 12:42:50.7905301 GameState.DebugPrintPowerList() - Count=36
-	D 12:42:50.7905301 GameState.DebugPrintPower() - TAG_CHANGE Entity=GameEntity tag=STEP value=MAIN_READY 
-	D 12:42:50.7905301 GameState.DebugPrintPower() - BLOCK_START BlockType=TRIGGER Entity=刚裂的夏侯惇#5866 EffectCardId=System.Collections.Generic.List1[System.String] EffectIndex=-1 Target=0 SubOption=-1 TriggerKeyword=TAG_NOT_SET
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=GameEntity tag=NUM_TURNS_IN_PLAY value=1 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=大魔王加菲猫#5996 tag=NUM_TURNS_IN_PLAY value=1 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=NUM_TURNS_IN_PLAY value=1 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=Banshee Tyrande id=87 zone=PLAY zonePos=0 cardId=HERO_09x player=1] tag=NUM_TURNS_IN_PLAY value=1 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=Lesser Heal id=88 zone=PLAY zonePos=0 cardId=HERO_09dbp player=1] tag=NUM_TURNS_IN_PLAY value=1 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=Nemsy Necrofizzle id=89 zone=PLAY zonePos=0 cardId=HERO_07a player=2] tag=NUM_TURNS_IN_PLAY value=1 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=Life Tap id=90 zone=PLAY zonePos=0 cardId=CS2_056_H1 player=2] tag=NUM_TURNS_IN_PLAY value=1 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=RESOURCES value=1 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=GameEntity tag=NEXT_STEP value=MAIN_START_TRIGGERS 
-	D 12:42:50.7905301 GameState.DebugPrintPower() - BLOCK_END
-	D 12:42:50.7905301 GameState.DebugPrintPower() - TAG_CHANGE Entity=GameEntity tag=STEP value=MAIN_START_TRIGGERS 
-	D 12:42:50.7905301 GameState.DebugPrintPower() - BLOCK_START BlockType=TRIGGER Entity=刚裂的夏侯惇#5866 EffectCardId=System.Collections.Generic.List1[System.String] EffectIndex=-1 Target=0 SubOption=-1 TriggerKeyword=TAG_NOT_SET
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=GameEntity tag=NEXT_STEP value=MAIN_START 
-	D 12:42:50.7905301 GameState.DebugPrintPower() - BLOCK_END
-	D 12:42:50.7905301 GameState.DebugPrintPower() - TAG_CHANGE Entity=GameEntity tag=STEP value=MAIN_START 
-	D 12:42:50.7905301 GameState.DebugPrintPower() - BLOCK_START BlockType=TRIGGER Entity=刚裂的夏侯惇#5866 EffectCardId=System.Collections.Generic.List1[System.String] EffectIndex=-1 Target=0 SubOption=-1 TriggerKeyword=TAG_NOT_SET
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=2166 value=80 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=467 value=1 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     SHOW_ENTITY - Updating Entity=[entityName=UNKNOWN ENTITY [cardType=INVALID] id=80 zone=DECK zonePos=0 cardId= player=2] CardID=SCH_514
-	D 12:42:50.7905301 GameState.DebugPrintPower() -         tag=CONTROLLER value=2
-	D 12:42:50.7905301 GameState.DebugPrintPower() -         tag=CARDTYPE value=SPELL
-	D 12:42:50.7905301 GameState.DebugPrintPower() -         tag=ZONE value=HAND
-	D 12:42:50.7905301 GameState.DebugPrintPower() -         tag=ENTITY_ID value=80
-	D 12:42:50.7905301 GameState.DebugPrintPower() -         tag=RARITY value=COMMON
-	D 12:42:50.7905301 GameState.DebugPrintPower() -         tag=478 value=2
-	D 12:42:50.7905301 GameState.DebugPrintPower() -         tag=MULTI_CLASS_GROUP value=5
-	D 12:42:50.7905301 GameState.DebugPrintPower() -         tag=1037 value=2
-	D 12:42:50.7905301 GameState.DebugPrintPower() -         tag=1043 value=1
-	D 12:42:50.7905301 GameState.DebugPrintPower() -         tag=1068 value=0
-	D 12:42:50.7905301 GameState.DebugPrintPower() -         tag=SPAWN_TIME_COUNT value=1
-	D 12:42:50.7905301 GameState.DebugPrintPower() -         tag=SPELL_SCHOOL value=6
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=UNKNOWN ENTITY [cardType=INVALID] id=80 zone=DECK zonePos=0 cardId= player=2] tag=NUM_TURNS_IN_HAND value=1 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=UNKNOWN ENTITY [cardType=INVALID] id=80 zone=DECK zonePos=0 cardId= player=2] tag=ZONE_POSITION value=4 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=UNKNOWN ENTITY [cardType=INVALID] id=80 zone=DECK zonePos=0 cardId= player=2] tag=ZONE_POSITION value=0 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=UNKNOWN ENTITY [cardType=INVALID] id=80 zone=DECK zonePos=0 cardId= player=2] tag=ZONE_POSITION value=4 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=3242 value=1 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=NUM_CARDS_DRAWN_THIS_TURN value=1 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=995 value=1 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=UNKNOWN ENTITY [cardType=INVALID] id=80 zone=DECK zonePos=0 cardId= player=2] tag=1570 value=1 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=467 value=0 
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=GameEntity tag=NEXT_STEP value=MAIN_ACTION 
-	D 12:42:50.7905301 GameState.DebugPrintPower() - BLOCK_END
-	D 12:42:50.7905301 GameState.DebugPrintPower() - TAG_CHANGE Entity=GameEntity tag=STEP value=MAIN_ACTION 
-	D 12:42:50.7905301 GameState.DebugPrintPower() - BLOCK_START BlockType=TRIGGER Entity=刚裂的夏侯惇#5866 EffectCardId=System.Collections.Generic.List1[System.String] EffectIndex=-1 Target=0 SubOption=-1 TriggerKeyword=TAG_NOT_SET
-	D 12:42:50.7905301 GameState.DebugPrintPower() -     TAG_CHANGE Entity=GameEntity tag=NEXT_STEP value=MAIN_END 
-	D 12:42:50.7905301 GameState.DebugPrintPower() - BLOCK_END
+	const c=detectGameOver(`
+	D 12:43:40.9084902 GameState.DebugPrintPowerList() - Count=15
+	D 12:43:40.9084902 GameState.DebugPrintPower() - TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=PLAYSTATE value=CONCEDED 
+	D 12:43:40.9084902 GameState.DebugPrintPower() - TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=3479 value=1 
+	D 12:43:40.9084902 GameState.DebugPrintPower() - TAG_CHANGE Entity=大魔王加菲猫#5996 tag=PLAYSTATE value=WON 
+	D 12:43:40.9084902 GameState.DebugPrintPower() - TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=PLAYSTATE value=LOST 
+	D 12:43:40.9084902 GameState.DebugPrintPower() - TAG_CHANGE Entity=[entityName=Kobold Librarian id=66 zone=HAND zonePos=1 cardId=LOOT_014 player=2] tag=NUM_TURNS_IN_HAND value=2 
+	D 12:43:40.9084902 GameState.DebugPrintPower() - TAG_CHANGE Entity=[entityName=Dark Pact id=63 zone=HAND zonePos=2 cardId=LOOT_017 player=2] tag=NUM_TURNS_IN_HAND value=2 
+	D 12:43:40.9084902 GameState.DebugPrintPower() - TAG_CHANGE Entity=[entityName=Elementium Geode id=61 zone=HAND zonePos=3 cardId=DEEP_030 player=2] tag=NUM_TURNS_IN_HAND value=2 
+	D 12:43:40.9084902 GameState.DebugPrintPower() - TAG_CHANGE Entity=[entityName=Raise Dead  id=80 zone=HAND zonePos=4 cardId=SCH_514 player=2] tag=NUM_TURNS_IN_HAND value=2 
+	D 12:43:40.9084902 GameState.DebugPrintPower() - TAG_CHANGE Entity=GameEntity tag=NEXT_STEP value=FINAL_WRAPUP 
+	D 12:43:40.9084902 GameState.DebugPrintPower() - TAG_CHANGE Entity=GameEntity tag=STEP value=FINAL_WRAPUP 
+	D 12:43:40.9084902 GameState.DebugPrintPower() - BLOCK_START BlockType=TRIGGER Entity=GameEntity EffectCardId=System.Collections.Generic.List1[System.String] EffectIndex=-1 Target=0 SubOption=-1 TriggerKeyword=TAG_NOT_SET
+	D 12:43:40.9084902 GameState.DebugPrintPower() -     TAG_CHANGE Entity=GameEntity tag=NEXT_STEP value=FINAL_GAMEOVER 
+	D 12:43:40.9084902 GameState.DebugPrintPower() - BLOCK_END
+	D 12:43:40.9084902 GameState.DebugPrintPower() - TAG_CHANGE Entity=GameEntity tag=STEP value=FINAL_GAMEOVER 
+	D 12:43:40.9084902 GameState.DebugPrintPower() - TAG_CHANGE Entity=GameEntity tag=STATE value=COMPLETE 
+	D 12:43:40.9084902 PowerTaskList.DebugDump() - ID=25 ParentID=0 PreviousID=0 TaskCount=10
+	D 12:43:40.9084902 PowerTaskList.DebugDump() - Block Start=(null)
+	D 12:43:40.9084902 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=PLAYSTATE value=CONCEDED 
+	D 12:43:40.9084902 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=3479 value=1 
+	D 12:43:40.9084902 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=大魔王加菲猫#5996 tag=PLAYSTATE value=WON 
+	D 12:43:40.9084902 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=刚裂的夏侯惇#5866 tag=PLAYSTATE value=LOST 
+	D 12:43:40.9084902 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=Kobold Librarian id=66 zone=HAND zonePos=1 cardId=LOOT_014 player=2] tag=NUM_TURNS_IN_HAND value=2 
+	D 12:43:40.9084902 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=Dark Pact id=63 zone=HAND zonePos=2 cardId=LOOT_017 player=2] tag=NUM_TURNS_IN_HAND value=2 
+	D 12:43:40.9084902 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=Elementium Geode id=61 zone=HAND zonePos=3 cardId=DEEP_030 player=2] tag=NUM_TURNS_IN_HAND value=2 
+	D 12:43:40.9084902 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=[entityName=Raise Dead  id=80 zone=HAND zonePos=4 cardId=SCH_514 player=2] tag=NUM_TURNS_IN_HAND value=2 
+	D 12:43:40.9084902 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=GameEntity tag=NEXT_STEP value=FINAL_WRAPUP 
+	D 12:43:40.9084902 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=GameEntity tag=STEP value=FINAL_WRAPUP 
+	D 12:43:40.9084902 PowerTaskList.DebugDump() - Block End=(null)
+	D 12:43:40.9084902 PowerTaskList.DebugDump() - ID=26 ParentID=0 PreviousID=0 TaskCount=1
+	D 12:43:40.9084902 PowerTaskList.DebugPrintPower() - BLOCK_START BlockType=TRIGGER Entity=GameEntity EffectCardId=System.Collections.Generic.List1[System.String] EffectIndex=-1 Target=0 SubOption=-1 TriggerKeyword=TAG_NOT_SET
+	D 12:43:40.9084902 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=GameEntity tag=NEXT_STEP value=FINAL_GAMEOVER 
+	D 12:43:40.9084902 PowerTaskList.DebugPrintPower() - BLOCK_END
+	D 12:43:40.9084902 PowerTaskList.DebugDump() - ID=27 ParentID=0 PreviousID=0 TaskCount=2
+	D 12:43:40.9084902 PowerTaskList.DebugDump() - Block Start=(null)
+	D 12:43:40.9084902 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=GameEntity tag=STEP value=FINAL_GAMEOVER 
+	D 12:43:40.9084902 PowerTaskList.DebugPrintPower() -     TAG_CHANGE Entity=GameEntity tag=STATE value=COMPLETE 
+	D 12:43:40.9084902 PowerTaskList.DebugDump() - Block End=(null)
 
-`,cardsdata,'刚裂的夏侯惇');
+`,'刚裂的夏侯惇#5866');
 	console.log(c);
 })();

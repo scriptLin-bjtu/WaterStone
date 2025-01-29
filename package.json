@@ -1,15 +1,30 @@
 {
-  "name": "heartstone",
-  "version": "1.0.0",
-  "description": "",
-  "main": "test.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "node-localstorage": "^3.0.5"
-  }
+	"name": "waterstone",
+	"version": "1.0.0",
+	"description": "A Hearthstone Deck Tracker",
+	"scripts": {
+		"build": "webpack --mode production",
+		"start": "webpack && qode ./dist/index.js",
+		"clean": "node -e \"const fs=require('fs');['dist','tmp-jam-pack-nodegui'].forEach(path=>{if(fs.existsSync(path))fs.rmSync(path,{recursive:true});});\"",
+		"package": "jam-pack-nodegui --config packaging/jam-pack-nodegui.json",
+		"run": "qode ./dist/index.js"
+	},
+	"keywords": [
+		"nodegui"
+	],
+	"author": "ScriptLin",
+	"license": "ISC",
+	"devDependencies": {
+		"clean-webpack-plugin": "^4.0.0",
+		"file-loader": "^6.2.0",
+		"jam-pack-nodegui": "^0.18.0",
+		"native-addon-loader": "^2.0.1",
+		"webpack": "^5.92.1",
+		"webpack-cli": "^4.10.0"
+	},
+	"dependencies": {
+		"@nodegui/nodegui": "^0.67.0",
+		"axios": "^1.7.9",
+		"node-localstorage": "^3.0.5"
+	}
 }

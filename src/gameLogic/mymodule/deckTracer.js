@@ -23,11 +23,11 @@ function findDeckNameAndId(content) {
 }
 
 
-async function decode(deckcode, token) {
+async function decode(deckcode, token,lang) {
 	try {
 		//console.log(deckcode,token);
 		const response = await fetch(
-			`https://us.api.blizzard.com/hearthstone/deck?code=${deckcode}&locale=en_US`, {
+			`https://us.api.blizzard.com/hearthstone/deck?code=${deckcode}&locale=${lang}`, {
 				method: 'GET',
 				headers: {
 					"Content-Type": "application/json",

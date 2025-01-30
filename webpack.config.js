@@ -7,7 +7,7 @@ module.exports = {
   target: "node",
   output: {
     path: path.resolve(__dirname, "dist"),
-    filename: "main.cjs"
+    filename: "index.js"
   },
   module: {
     rules: [

@@ -21,7 +21,7 @@
     ]
   },
   "addLauncher": {
-    "jsEntryPoint": "dist/main.cjs"
+    "jsEntryPoint": "dist/index.js"
   },
   "quietQode": {},
   "zip": {
